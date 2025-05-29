@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simcha AI - Jewish AI Assistant</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Simcha AI Logo" class="logo">
+            <h1>Simcha AI</h1>
+            <div class="persona-selector">
+                <select id="persona-select">
+                    <option value="rabbi">Rabbi</option>
+                    <option value="student">Student</option>
+                    <option value="israeli">Israeli</option>
+                </select>
+            </div>
+        </header>
+
+        <main>
+            <div class="chat-container" id="chat-container">
+                <div class="welcome-message">
+                    <h2>Welcome to Simcha AI!</h2>
+                    <p>Choose a persona and start chatting about Jewish topics, Torah, or Israeli culture.</p>
+                </div>
+            </div>
+
+            <div class="input-container">
+                <textarea 
+                    id="user-input" 
+                    placeholder="Type your message here..." 
+                    rows="1"
+                    onkeydown="if(event.keyCode == 13 && !event.shiftKey) { event.preventDefault(); sendMessage(); }"
+                ></textarea>
+                <button id="send-button" onclick="sendMessage()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 2L11 13M22 2L15 22L11 13L2 9L22 2Z"/>
+                    </svg>
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const chatContainer = document.getElementById('chat-container');
+        const userInput = document.getElementById('user-input');
+        const sendButton = document.getElementById('send-button');
+        const personaSelect = document.getElementById('persona-select');
+
+        // Auto-resize textarea
+        userInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        });
+
+        function addMessage(content, isUser = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user-message' : 'ai-message'}`;
+            messageDiv.innerHTML = `
+                <div class="message-content">
+                    ${content}
+                </div>
+            `;
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const message = userInput.value.trim();
+            if (!message) return;
+
+            // Add user message to chat
+            addMessage(message, true);
+            userInput.value = '';
+            userInput.style.height = 'auto';
+
+            // Disable input while waiting for response
+            userInput.disabled = true;
+            sendButton.disabled = true;
+
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        persona: personaSelect.value
+                    }),
+                });
+
+                const data = await response.json();
+                
+                if (data.error) {
+                    addMessage('Sorry, there was an error processing your request. Please try again.');
+                } else {
+                    addMessage(data.response);
+                }
+            } catch (error) {
+                addMessage('Sorry, there was an error connecting to the server. Please try again.');
+            }
+
+            // Re-enable input
+            userInput.disabled = false;
+            sendButton.disabled = false;
+            userInput.focus();
+        }
+    </script>
+</body>
+</html> 
