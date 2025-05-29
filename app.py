@@ -2,11 +2,16 @@ from flask import Flask, render_template, request, jsonify
 import os
 from openai import OpenAI
 from dotenv import load_dotenv
+import secrets
 
 # Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
+
+# Generate a random secret key if not provided
+# In production, set a strong, unique key via environment variable
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', secrets.token_hex(16))
 
 # Initialize OpenAI client
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
