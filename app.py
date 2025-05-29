@@ -1,8 +1,9 @@
 from flask import Flask, render_template, request, jsonify
 import os
-from openai import OpenAI
 from dotenv import load_dotenv
 import secrets
+from mistralai.client import MistralClient
+from mistralai.models.chat_completion import ChatMessage
 
 # Load environment variables
 load_dotenv()
@@ -13,8 +14,8 @@ app = Flask(__name__)
 # In production, set a strong, unique key via environment variable
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', secrets.token_hex(16))
 
-# Initialize OpenAI client
-client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+# Initialize Mistral AI client
+client = MistralClient(api_key=os.getenv('MISTRAL_API_KEY'))
 
 # Persona prompts
 PERSONA_PROMPTS = {
@@ -37,18 +38,16 @@ def chat():
         return jsonify({'error': 'No message provided'}), 400
     
     try:
-        # Construct the full prompt with persona context
-        full_prompt = f"{PERSONA_PROMPTS[persona]}\n\nUser: {user_message}\n\nAssistant:"
-        
-        # Get response from OpenAI
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": PERSONA_PROMPTS[persona]},
-                {"role": "user", "content": user_message}
-            ],
-            temperature=0.7,
-            max_tokens=500
+        # Get response from Mistral AI
+        messages = [
+            ChatMessage(role="system", content=PERSONA_PROMPTS[persona]),
+            ChatMessage(role="user", content=user_message)
+        ]
+
+        # Using a basic Mistral model suitable for a free tier
+        response = client.chat(
+            model="mistral-tiny", 
+            messages=messages
         )
         
         ai_response = response.choices[0].message.content
@@ -56,7 +55,12 @@ def chat():
         return jsonify({'response': ai_response})
     
     except Exception as e:
+        # Log the error for debugging
+        print(f"Error calling Mistral AI API: {e}")
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
+    # In production, use a production-ready WSGI server like Gunicorn
+    # app.run(debug=True)
+    # For local testing, you can still use debug=True
     app.run(debug=True) 
