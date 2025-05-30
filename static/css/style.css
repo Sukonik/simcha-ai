@@ -39,9 +39,16 @@ header {
     background-color: var(--background-color);
 }
 
-.logo {
-    height: 40px;
-    width: auto;
+.header-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.menorah-icon {
+    font-size: 1.8rem;
+    line-height: 1;
+    color: var(--primary-color);
 }
 
 h1 {
